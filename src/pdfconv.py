@@ -6,18 +6,30 @@ import os, re
 
 def get_releases(owner, repo):
     """GitHub API'den TÜM release verilerini çeker (sayfalandırmalı)."""
-    releases = [] # Tüm sürümleri toplayacağımız liste
-    page = 1  # GitHub API sayfa numarası
+    releases = []
+    page = 1
+
+    # 🔹 Token varsa header’a ekle
+    token = os.environ.get("GITHUB_TOKEN")
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    if token:
+        headers["Authorization"] = f"token {token}"
+
     while True:
         url = f"https://api.github.com/repos/{owner}/{repo}/releases?page={page}&per_page=100"
-        response = requests.get(url) # API isteği gönder
+        response = requests.get(url, headers=headers)
 
-        if response.status_code != 200: # Başarısızsa hata ver
-            raise Exception("Veri çekilirken hata oluştu.")
+        if response.status_code == 403 and "rate limit" in response.text.lower():
+            if token:
+                raise Exception("API limitine ulaşıldı (token olsa da limit dolmuş olabilir).")
+            else:
+                raise Exception("GitHub anonim limitine ulaşıldı. Lütfen bir GITHUB_TOKEN tanımlayın.")
+        if response.status_code != 200:
+            raise Exception(f"Veri çekilirken hata oluştu (HTTP {response.status_code}).")
 
-        page_data = response.json()  # JSON verisini al
+        page_data = response.json()
         if not page_data:
-            break  # sayfa boşsa dur
+            break
         releases.extend(page_data)
         page += 1
 
@@ -78,14 +90,12 @@ def _write_markdown(pdf, text: str):
 
         # Kalın ve italik metinleri yakala
         # **kalın**
-        """
-        Bu, iki yıldız (**) karakterini kelimenin tam anlamıyla arar
-        Normalde regex’te * özel bir karakterdir (önceki karakteri tekrarlamak anlamına gelir).
-        Ama biz burada gerçekten yıldız işaretini aramak istiyoruz,
-        o yüzden önüne \ koyarak “kaçırıyoruz” → \*.
+        #Bu, iki yıldız (**) karakterini kelimenin tam anlamıyla arar
+        #Normalde regex’te * özel bir karakterdir (önceki karakteri tekrarlamak anlamına gelir).
+        #Ama biz burada gerçekten yıldız işaretini aramak istiyoruz,
+        #o yüzden önüne \ koyarak “kaçırıyoruz” → \*.
         
-        (.*?) → “iki yıldız arasındaki metni, kısa yoldan al”
-        """
+        #(.*?) → “iki yıldız arasındaki metni, kısa yoldan al”
         bold_matches = re.findall(r"\*\*(.*?)\*\*", line)
         # __italik__
         italic_matches = re.findall(r"_(.*?)_", line)
@@ -189,3 +199,4 @@ def make_pdf(data, output_path, project_title="", separate_pages=False):
             pdf.ln(6)
 
     pdf.output(output_path)
+
