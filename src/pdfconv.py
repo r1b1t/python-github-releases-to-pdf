@@ -65,6 +65,9 @@ def _write_markdown(pdf, text: str):
             pdf.ln(4)
             continue
 
+        # 🔹 :emoji: şeklindeki ifadeleri kaldır
+        line = re.sub(r":[a-zA-Z0-9_+\-]+:", "", line)
+
         # ### başlık
         if line.startswith("###"):
             content = line.lstrip("#").strip() # # öğelerini atar
