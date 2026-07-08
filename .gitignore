@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Sanal ortamlar
+.venv/
+venv/
+env/
+
+# PyInstaller çıktıları
+build/
+dist/
+
+# fpdf font önbellek dosyaları (otomatik üretilir)
+src/fonts/*.pkl
+
+# Uygulamanın ürettiği PDF'ler
+releases_*.pdf
+
+# IDE / editör
+.idea/
+.vscode/
+*.swp
